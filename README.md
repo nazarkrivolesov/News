@@ -1,11 +1,23 @@
-<div align="center">
+# Черкаси Новини - Інструкція з розгортання (Hosting)
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+Цей проект — сучасний агрегатор новин, готовий до деплою на популярні платформи (Vercel, Netlify, GitHub Pages).
 
-  <h1>Built with AI Studio</h2>
+## Як отримати власне посилання:
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+1. **Завантажте файли**: Збережіть усі файли проекту у локальну папку.
+2. **GitHub**: Завантажте папку у свій репозиторій на GitHub.
+3. **Хостинг (Vercel / Netlify)**:
+   - Авторизуйтесь на [Vercel](https://vercel.com) через GitHub.
+   - Натисніть **"Add New"** -> **"Project"** та виберіть свій репозиторій.
+   - **КРИТИЧНО ВАЖЛИВО**: У розділі "Environment Variables" додайте:
+     - Ключ: `API_KEY`
+     - Значення: Ваш API ключ від Google Gemini (можна безкоштовно отримати на [Google AI Studio](https://aistudio.google.com/)).
+4. **Deploy**: Натисніть кнопку розгортання. За 30-60 секунд ви отримаєте публічне посилання типу `your-project-name.vercel.app`.
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## Особливості реалізації
+- **AI-агрегація**: Використовує модель `gemini-3-flash-preview` для пошуку свіжих новин.
+- **Grounding**: Модель перевіряє інформацію через Google Search, щоб дані були актуальними (не старішими за 24 години).
+- **Погода**: Автоматично оновлюється при завантаженні сторінки.
 
-</div>
+---
+*Розроблено як сучасний медіа-портал для Черкащини.*
