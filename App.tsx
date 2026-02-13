@@ -12,7 +12,7 @@ const App: React.FC = () => {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [sources, setSources] = useState<GroundingSource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{message: string, type: 'auth' | 'general' | 'empty' | null}> (null);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark');
@@ -25,22 +25,11 @@ const App: React.FC = () => {
   const toggleTheme = () => {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
-    if (newMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
+    document.documentElement.classList.toggle('dark', newMode);
+    localStorage.setItem('theme', newMode ? 'dark' : 'light');
   };
 
   const loadData = useCallback(async () => {
-    if (!process.env.API_KEY || process.env.API_KEY === 'undefined') {
-      setError("API ключ не підключено. Якщо ви щойно додали його у Vercel, вам потрібно зробити 'Redeploy' проекту.");
-      setIsLoading(false);
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
     try {
@@ -54,11 +43,21 @@ const App: React.FC = () => {
       setWeather(weatherData);
 
       if (newsData.news.length === 0) {
-        setError("Новин наразі не знайдено, але зв'язок з AI встановлено.");
+        setError({ message: "Новин не знайдено. Спробуйте пізніше.", type: 'empty' });
       }
-    } catch (err) {
-      console.error("Data loading error:", err);
-      setError("Помилка зв'язку з AI. Спробуйте оновити пізніше.");
+    } catch (err: any) {
+      console.error("App Error:", err);
+      if (err.message?.includes('API_KEY_MISSING') || err.message?.includes('403') || err.message?.includes('API key')) {
+        setError({ 
+          message: "Проблема з API ключем. Переконайтеся, що ви додали API_KEY у Vercel та зробили 'Redeploy'.", 
+          type: 'auth' 
+        });
+      } else {
+        setError({ 
+          message: "Не вдалося з'єднатися з сервером новин. Перевірте інтернет або спробуйте оновити.", 
+          type: 'general' 
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -78,38 +77,37 @@ const App: React.FC = () => {
           <div className="flex-1">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white border-l-4 border-blue-600 pl-4">
-                Останні новини Черкащини
+                Стрічка Черкащини
               </h2>
               <button 
                 onClick={loadData}
-                className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors flex items-center gap-1 bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700"
+                className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-4 py-2 rounded-lg transition-all flex items-center gap-2"
                 disabled={isLoading}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                Оновити
+                {isLoading ? 'Завантаження...' : 'Оновити'}
               </button>
             </div>
 
             {error && (
-              <div className="bg-white dark:bg-gray-800 border-l-4 border-amber-500 text-gray-800 dark:text-gray-200 p-6 rounded-xl mb-8 shadow-sm">
+              <div className={`p-6 rounded-2xl mb-8 border-l-4 shadow-sm ${error.type === 'auth' ? 'bg-red-50 dark:bg-red-900/10 border-red-500' : 'bg-amber-50 dark:bg-amber-900/10 border-amber-500'}`}>
                 <div className="flex items-start gap-4">
-                  <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <div className={`p-2 rounded-full ${error.type === 'auth' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600'}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                   </div>
-                  <div>
-                    <p className="font-bold text-lg mb-1">Сповіщення</p>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
-                    {error.includes("Redeploy") && (
-                      <div className="space-y-2 text-sm text-gray-500 dark:text-gray-500">
-                        <p>1. Перейдіть у вкладку <b>Deployments</b> на Vercel.</p>
-                        <p>2. Натисніть <b>"..."</b> біля останнього пункту.</p>
-                        <p>3. Оберіть <b>Redeploy</b>.</p>
-                      </div>
-                    )}
+                  <div className="flex-1">
+                    <h3 className="font-bold text-gray-900 dark:text-white">Помилка завантаження</h3>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">{error.message}</p>
+                    <div className="mt-4 flex gap-3">
+                      <button onClick={loadData} className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:underline">Повторити запит</button>
+                      {error.type === 'auth' && (
+                        <span className="text-xs text-gray-400">| Перевірте налаштування проекту у Vercel</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -126,7 +124,7 @@ const App: React.FC = () => {
             )}
           </div>
 
-          <div className="w-full lg:w-80 space-y-8">
+          <div className="w-full lg:w-80">
             <Sidebar weather={weather} sources={sources} />
           </div>
         </div>
