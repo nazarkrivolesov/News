@@ -9,16 +9,16 @@ interface NewsCardProps {
 const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
   const getCategoryColor = (cat: string) => {
     switch(cat) {
-      case 'Політика': return 'bg-red-100 text-red-700';
-      case 'Події': return 'bg-orange-100 text-orange-700';
-      case 'Культура': return 'bg-purple-100 text-purple-700';
-      case 'Спорт': return 'bg-green-100 text-green-700';
-      default: return 'bg-blue-100 text-blue-700';
+      case 'Політика': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+      case 'Події': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+      case 'Культура': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
+      case 'Спорт': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+      default: return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
     }
   };
 
   return (
-    <article className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
+    <article className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
       <div className="relative aspect-video overflow-hidden">
         <img 
           src={news.imageUrl} 
@@ -32,17 +32,17 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
       </div>
       
       <div className="p-5">
-        <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
-          <span className="font-semibold text-blue-500 uppercase">{news.source}</span>
+        <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 mb-3">
+          <span className="font-semibold text-blue-500 dark:text-blue-400 uppercase">{news.source}</span>
           <span>•</span>
           <span>{news.timestamp}</span>
         </div>
         
-        <h3 className="text-xl font-bold text-gray-900 leading-tight mb-3 hover:text-blue-600 cursor-pointer transition-colors">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white leading-tight mb-3 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors">
           <a href={news.url} target="_blank" rel="noopener noreferrer">{news.title}</a>
         </h3>
         
-        <p className="text-gray-600 text-sm line-clamp-3 mb-4">
+        <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3 mb-4">
           {news.summary}
         </p>
         
@@ -50,7 +50,7 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
           href={news.url} 
           target="_blank" 
           rel="noopener noreferrer"
-          className="inline-flex items-center text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+          className="inline-flex items-center text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
         >
           Читати повністю
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
