@@ -3,8 +3,9 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { NewsItem, WeatherData, GroundingSource } from "../types";
 
 export class GeminiNewsService {
-  // Використовуємо максимально пряму ініціалізацію як у документації
   private createAI() {
+    // Згідно з інструкціями, використовуємо process.env.API_KEY напряму.
+    // Якщо він не визначений, SDK викине відповідну помилку.
     return new GoogleGenAI({ apiKey: process.env.API_KEY });
   }
 

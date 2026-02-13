@@ -12,7 +12,7 @@ const App: React.FC = () => {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [sources, setSources] = useState<GroundingSource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<{message: string, type: 'auth' | 'general' | 'empty' | null}> (null);
+  const [error, setError] = useState<{message: string, type: 'auth' | 'general' | 'empty' | null} | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark');
@@ -47,14 +47,15 @@ const App: React.FC = () => {
       }
     } catch (err: any) {
       console.error("App Error:", err);
-      if (err.message?.includes('API_KEY_MISSING') || err.message?.includes('403') || err.message?.includes('API key')) {
+      const errorMsg = err.message || "";
+      if (errorMsg.includes('API Key') || errorMsg.includes('API_KEY') || errorMsg.includes('403')) {
         setError({ 
-          message: "Проблема з API ключем. Переконайтеся, що ви додали API_KEY у Vercel та зробили 'Redeploy'.", 
+          message: "API Key не знайдено або він недійсний. Будь ласка, переконайтеся, що API_KEY додано в Environment Variables вашого хостингу (наприклад, Vercel) і ви зробили Redeploy.", 
           type: 'auth' 
         });
       } else {
         setError({ 
-          message: "Не вдалося з'єднатися з сервером новин. Перевірте інтернет або спробуйте оновити.", 
+          message: "Помилка при отриманні даних. Будь ласка, перевірте з'єднання або спробуйте оновити сторінку.", 
           type: 'general' 
         });
       }
@@ -100,13 +101,12 @@ const App: React.FC = () => {
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-gray-900 dark:text-white">Помилка завантаження</h3>
+                    <h3 className="font-bold text-gray-900 dark:text-white">
+                      {error.type === 'auth' ? 'Помилка конфігурації' : 'Помилка завантаження'}
+                    </h3>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">{error.message}</p>
                     <div className="mt-4 flex gap-3">
-                      <button onClick={loadData} className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:underline">Повторити запит</button>
-                      {error.type === 'auth' && (
-                        <span className="text-xs text-gray-400">| Перевірте налаштування проекту у Vercel</span>
-                      )}
+                      <button onClick={loadData} className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:underline">Спробувати ще раз</button>
                     </div>
                   </div>
                 </div>
