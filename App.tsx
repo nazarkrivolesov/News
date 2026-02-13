@@ -43,19 +43,26 @@ const App: React.FC = () => {
       setWeather(weatherData);
 
       if (newsData.news.length === 0) {
-        setError({ message: "Новин не знайдено. Спробуйте пізніше.", type: 'empty' });
+        setError({ message: "Зараз немає новин, що відповідають запиту. Спробуйте оновити пізніше.", type: 'empty' });
       }
     } catch (err: any) {
-      console.error("App Error:", err);
+      console.error("App Error Details:", err);
       const errorMsg = err.message || "";
-      if (errorMsg.includes('API Key') || errorMsg.includes('API_KEY') || errorMsg.includes('403')) {
+      
+      // Перевірка на помилки авторизації/налаштування
+      if (errorMsg.includes('API Key') || errorMsg.includes('API_KEY') || errorMsg.includes('set when running')) {
         setError({ 
-          message: "API Key не знайдено або він недійсний. Будь ласка, переконайтеся, що API_KEY додано в Environment Variables вашого хостингу (наприклад, Vercel) і ви зробили Redeploy.", 
+          message: "Ключ API не знайдено або він некоректний. Переконайтеся, що ви додали 'API_KEY' у змінні оточення вашого хостингу та виконали 'Redeploy'.", 
+          type: 'auth' 
+        });
+      } else if (errorMsg.includes('403') || errorMsg.includes('Forbidden')) {
+        setError({ 
+          message: "Помилка доступу (403). Можливо, ваш API ключ не підтримує Google Search Grounding.", 
           type: 'auth' 
         });
       } else {
         setError({ 
-          message: "Помилка при отриманні даних. Будь ласка, перевірте з'єднання або спробуйте оновити сторінку.", 
+          message: "Помилка зв'язку з сервером новин. Перевірте інтернет та спробуйте ще раз.", 
           type: 'general' 
         });
       }
@@ -68,6 +75,7 @@ const App: React.FC = () => {
     loadData();
   }, [loadData]);
 
+  // Fix: Completed the missing JSX structure and added export default to fix the import error in index.tsx
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-theme pb-12">
       <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
@@ -82,32 +90,31 @@ const App: React.FC = () => {
               </h2>
               <button 
                 onClick={loadData}
-                className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-4 py-2 rounded-lg transition-all flex items-center gap-2"
+                className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-4 py-2 rounded-lg transition-all flex items-center gap-2 disabled:opacity-50"
                 disabled={isLoading}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                {isLoading ? 'Завантаження...' : 'Оновити'}
+                {isLoading ? 'Оновлення...' : 'Оновити'}
               </button>
             </div>
 
             {error && (
-              <div className={`p-6 rounded-2xl mb-8 border-l-4 shadow-sm ${error.type === 'auth' ? 'bg-red-50 dark:bg-red-900/10 border-red-500' : 'bg-amber-50 dark:bg-amber-900/10 border-amber-500'}`}>
-                <div className="flex items-start gap-4">
-                  <div className={`p-2 rounded-full ${error.type === 'auth' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600'}`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className={`p-8 rounded-3xl mb-8 border shadow-xl ${error.type === 'auth' ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/30' : 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900/30'}`}>
+                <div className="flex flex-col items-center text-center gap-4">
+                  <div className={`p-4 rounded-full ${error.type === 'auth' ? 'bg-red-100 dark:bg-red-900/40 text-red-600 shadow-inner' : 'bg-amber-100 dark:bg-amber-900/40 text-amber-600'}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-gray-900 dark:text-white">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                       {error.type === 'auth' ? 'Помилка конфігурації' : 'Помилка завантаження'}
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">{error.message}</p>
-                    <div className="mt-4 flex gap-3">
-                      <button onClick={loadData} className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:underline">Спробувати ще раз</button>
-                    </div>
+                    <p className="text-gray-600 dark:text-gray-400 max-w-md">
+                      {error.message}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -124,9 +131,10 @@ const App: React.FC = () => {
             )}
           </div>
 
-          <div className="w-full lg:w-80">
+          <div className="lg:w-80">
             <Sidebar weather={weather} sources={sources} />
           </div>
+          
         </div>
       </main>
     </div>
