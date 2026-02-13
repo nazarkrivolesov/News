@@ -3,26 +3,18 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { NewsItem, WeatherData, GroundingSource } from "../types";
 
 export class GeminiNewsService {
-  private ai: GoogleGenAI;
-
-  constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  private getAI() {
+    return new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   }
 
   async fetchCherkasyNews(): Promise<{ news: NewsItem[], sources: GroundingSource[] }> {
     try {
-      const prompt = `Знайди останні новини міста Черкаси та Черкаської області за останні 24 години. 
-      Зверни особливу увагу на інформацію з популярних місцевих Телеграм-каналів (таких як "18000", "Черкаси Live", "Zmi.ck.ua", "Суспільне Черкаси") та Instagram-пабліків. 
-      Надай список з 6-8 найважливіших новин.
-      Для кожної новини вкажи: 
-      1. Заголовок
-      2. Короткий зміст (2-3 речення)
-      3. Категорію (Політика, Події, Культура, Спорт, Життя)
-      4. Приблизний час публікації.
-      
-      Формат відповіді: тільки JSON.`;
+      const ai = this.getAI();
+      const prompt = `Знайди 6-8 актуальних новин Черкас та Черкаської області за останні 24 години. 
+      Використовуй інформацію з місцевих пабліків. 
+      Відповідь надай СУВОРО у форматі JSON.`;
 
-      const response = await this.ai.models.generateContent({
+      const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
         config: {
@@ -50,8 +42,8 @@ export class GeminiNewsService {
         },
       });
 
-      const jsonStr = response.text.trim();
-      const data = JSON.parse(jsonStr);
+      const text = response.text || "{}";
+      const data = JSON.parse(text);
       
       const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
       const sources: GroundingSource[] = groundingChunks
@@ -61,29 +53,33 @@ export class GeminiNewsService {
           uri: chunk.web.uri
         }));
 
-      const newsItems: NewsItem[] = data.news.map((item: any, index: number) => ({
-        id: `news-${index}`,
-        title: item.title,
-        summary: item.summary,
-        category: item.category as any,
-        timestamp: item.timestamp,
-        source: sources[index % sources.length]?.title || "Місцеві ЗМІ",
-        url: sources[index % sources.length]?.uri || "https://suspilne.media/regions/cherkasy-region/",
-        imageUrl: `https://picsum.photos/seed/${index + 42}/800/450`
-      }));
+      const newsItems: NewsItem[] = (data.news || []).map((item: any, index: number) => {
+        const sourceObj = sources[index % Math.max(sources.length, 1)];
+        return {
+          id: `news-${Date.now()}-${index}`,
+          title: item.title || "Новина без заголовка",
+          summary: item.summary || "",
+          category: (item.category || 'Життя') as any,
+          timestamp: item.timestamp || "Щойно",
+          source: sourceObj?.title || "Черкаські ЗМІ",
+          url: sourceObj?.uri || "https://suspilne.media/regions/cherkasy-region/",
+          imageUrl: `https://picsum.photos/seed/${index + 100}/800/450`
+        };
+      });
 
       return { news: newsItems, sources };
     } catch (error) {
-      console.error("Error fetching news:", error);
+      console.error("Error in GeminiNewsService:", error);
       return { news: [], sources: [] };
     }
   }
 
   async fetchWeather(): Promise<WeatherData> {
     try {
-      const response = await this.ai.models.generateContent({
+      const ai = this.getAI();
+      const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: "Яка зараз погода в Черкасах? Надай тільки температуру (число) та короткий опис стану неба (хмарно, сонячно тощо). Формат відповіді: JSON.",
+        contents: "Яка погода в Черкасах? JSON: {temp: number, condition: string}",
         config: {
           tools: [{ googleSearch: {} }],
           responseMimeType: "application/json",
@@ -98,10 +94,10 @@ export class GeminiNewsService {
         }
       });
       
-      const data = JSON.parse(response.text.trim());
+      const data = JSON.parse(response.text || '{"temp":0,"condition":"Завантаження"}');
       return { ...data, location: "Черкаси" };
     } catch (error) {
-      return { temp: 0, condition: "Невідомо", location: "Черкаси" };
+      return { temp: 0, condition: "Оновлюється", location: "Черкаси" };
     }
   }
 }

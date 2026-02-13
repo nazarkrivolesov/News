@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Header from './components/Header';
 import NewsCard from './components/NewsCard';
 import Sidebar from './components/Sidebar';
@@ -14,9 +14,16 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const newsService = React.useMemo(() => new GeminiNewsService(), []);
+  const newsService = useMemo(() => new GeminiNewsService(), []);
 
   const loadData = useCallback(async () => {
+    // Перевірка ключа
+    if (!process.env.API_KEY || process.env.API_KEY === 'undefined') {
+      setError("API ключ не підключено. Якщо ви щойно додали його у Vercel, вам потрібно зробити 'Redeploy' проекту.");
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -24,11 +31,17 @@ const App: React.FC = () => {
         newsService.fetchCherkasyNews(),
         newsService.fetchWeather()
       ]);
+      
       setNews(newsData.news);
       setSources(newsData.sources);
       setWeather(weatherData);
+
+      if (newsData.news.length === 0) {
+        setError("Новин наразі не знайдено, але зв'язок з AI встановлено. Спробуйте оновити пізніше.");
+      }
     } catch (err) {
-      setError("Не вдалося завантажити останні новини. Спробуйте пізніше.");
+      console.error("Data loading error:", err);
+      setError("Помилка зв'язку з AI. Перевірте ліміти вашого API ключа або спробуйте пізніше.");
     } finally {
       setIsLoading(false);
     }
@@ -36,11 +49,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    // Refresh every 15 minutes
-    const interval = setInterval(loadData, 15 * 60 * 1000);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadData]);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
@@ -49,15 +58,14 @@ const App: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <div className="flex flex-col lg:flex-row gap-8">
           
-          {/* Main Content Area */}
           <div className="flex-1">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-extrabold text-gray-900 border-l-4 border-blue-600 pl-4">
-                Останні новини
+                Останні новини Черкащини
               </h2>
               <button 
                 onClick={loadData}
-                className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1"
+                className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-100"
                 disabled={isLoading}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -68,8 +76,25 @@ const App: React.FC = () => {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl mb-6">
-                {error}
+              <div className="bg-white border-l-4 border-amber-500 text-gray-800 p-6 rounded-xl mb-8 shadow-sm">
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-amber-100 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-bold text-lg mb-1">Майже готово!</p>
+                    <p className="text-gray-600 mb-4">{error}</p>
+                    {error.includes("Redeploy") && (
+                      <div className="space-y-2 text-sm text-gray-500">
+                        <p>1. Перейдіть у вкладку <b>Deployments</b> на Vercel.</p>
+                        <p>2. Натисніть <b>"..."</b> біля останнього пункту.</p>
+                        <p>3. Оберіть <b>Redeploy</b>.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -77,52 +102,18 @@ const App: React.FC = () => {
               <LoadingSkeleton />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {news.length > 0 ? (
-                  news.map((item) => (
-                    <NewsCard key={item.id} news={item} />
-                  ))
-                ) : (
-                  <div className="col-span-full py-20 text-center text-gray-500">
-                    Наразі новин не знайдено. Будь ласка, оновіть сторінку.
-                  </div>
-                )}
+                {news.map((item) => (
+                  <NewsCard key={item.id} news={item} />
+                ))}
               </div>
-            )}
-
-            {/* Pagination or Load More could go here */}
-            {!isLoading && news.length > 0 && (
-               <div className="mt-12 text-center">
-                 <button className="px-8 py-3 bg-white border border-gray-200 rounded-full font-bold text-gray-900 shadow-sm hover:shadow-md transition-all active:scale-95">
-                   Завантажити більше новин
-                 </button>
-               </div>
             )}
           </div>
 
-          {/* Sidebar Area */}
           <div className="w-full lg:w-80 space-y-8">
             <Sidebar weather={weather} sources={sources} />
           </div>
-
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="mt-20 border-t border-gray-200 bg-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="text-xl font-bold text-gray-900 mb-2">ЧЕРКАСИ NEWS</div>
-          <p className="text-sm text-gray-500 mb-6">Ваше головне джерело новин Черкащини</p>
-          <div className="flex justify-center gap-6 mb-8">
-            <a href="#" className="text-gray-400 hover:text-blue-600 transition-colors font-medium">Про проект</a>
-            <a href="#" className="text-gray-400 hover:text-blue-600 transition-colors font-medium">Контакти</a>
-            <a href="#" className="text-gray-400 hover:text-blue-600 transition-colors font-medium">Реклама</a>
-          </div>
-          <div className="text-xs text-gray-400">
-            © {new Date().getFullYear()} Черкаси Новини. Всі права захищені. 
-            <br />Розроблено з використанням штучного інтелекту Google Gemini.
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
